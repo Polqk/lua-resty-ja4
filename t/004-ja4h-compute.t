@@ -2,7 +2,7 @@ use Test::Nginx::Socket::Lua;
 use Cwd qw(cwd);
 
 repeat_each(1);
-plan tests => repeat_each() * 2 * 10;
+plan tests => repeat_each() * 2 * 12;
 
 no_shuffle();
 
@@ -207,3 +207,40 @@ Referer: http://test.com
 --- response_body
 match: yes
 len: 51
+
+=== TEST 11: ja4h.compute with duplicate Accept-Language headers uses the first one
+--- http_config eval: $::HttpConfig
+--- config
+    location /t {
+        content_by_lua_block {
+            local ja4h = require "resty.ja4h"
+            local hash = ja4h.compute()
+            ngx.say("lang: ", hash:sub(9, 12))
+        }
+    }
+--- request
+GET /t
+--- more_headers
+Accept-Language: fr-FR
+Accept-Language: en-US
+--- response_body
+lang: frfr
+
+=== TEST 12: ja4h.compute with duplicate Cookie headers joins them
+--- http_config eval: $::HttpConfig
+--- config
+    location /t {
+        content_by_lua_block {
+            local ja4h = require "resty.ja4h"
+            ja4h.configure({ hash = false })
+            local raw = ja4h.compute()
+            ngx.say("raw: ", raw)
+        }
+    }
+--- request
+GET /t
+--- more_headers
+Cookie: b=2
+Cookie: a=1
+--- response_body
+raw: ge11cn020000_Host,Connection_a,b_a=1,b=2
