@@ -340,14 +340,24 @@ function _M.compute()
         local header_names, header_count = utils.parse_raw_header_names(raw_header)
         local headers = req.get_headers(100)
 
+        -- get_headers() returns a table for a repeated header; match the FFI path
+        local accept_language = headers["accept-language"]
+        if type(accept_language) == "table" then
+            accept_language = accept_language[1]
+        end
+        local cookie_str = headers["cookie"]
+        if type(cookie_str) == "table" then
+            cookie_str = join_cookie_values(cookie_str, #cookie_str)
+        end
+
         result = _M.build({
             method          = method,
             version         = version,
             has_cookie      = headers["cookie"] ~= nil,
             has_referer     = headers["referer"] ~= nil,
             header_names    = header_names,
-            accept_language = headers["accept-language"],
-            cookie_str      = headers["cookie"],
+            accept_language = accept_language,
+            cookie_str      = cookie_str,
         })
     end
 
